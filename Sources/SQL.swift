@@ -10,7 +10,7 @@ public class SQL {
 	public var data: [String: String]?
 
 	public enum Operation {
-		case SELECT, DELETE, INSERT, UPDATE
+		case CREATE, SELECT, DELETE, INSERT, UPDATE
 	}
 
 	public init(operation: Operation, table: String) {
@@ -22,6 +22,8 @@ public class SQL {
 		var query: [String] = []
 
 		switch self.operation {
+		case .CREATE:
+			query.append("CREATE TABLE IF NOT EXISTS")
 		case .SELECT:
 			query.append("SELECT * FROM")
 		case .DELETE:
@@ -79,6 +81,19 @@ public class SQL {
 				let updatesString = updates.joinWithSeparator(", ")
 				query.append("SET \(updatesString)")
 
+			} else if self.operation == .CREATE {
+				var text = "("
+				// query.append("(")
+				for (key, value) in data {
+					text += key
+					query.append(text)
+					text = value
+					text += ", "
+				}
+				text.removeAtIndex(text.endIndex.predecessor().predecessor())
+
+				text += ")"
+				query.append(text)
 			}
 
 		}
@@ -90,7 +105,8 @@ public class SQL {
 
 			for filter in filters {
 				if let filter = filter as? CompareFilter {
-					query.append(" `\(filter.key)` = '\(filter.value)'")
+					let filterValue: String = filter.value.typeString + "." + filter.value.toString()
+					query.append(" `\(filter.key)` = '\(filterValue)'")
 				}
 			}
 		}
@@ -100,8 +116,6 @@ public class SQL {
 		}
 
 		let queryString = query.joinWithSeparator(" ")
-
-		self.log(queryString)
 
 		return queryString + ";"
 	}
